@@ -16,6 +16,9 @@ Apple parts of the toolchain:
 | **Remote Mac over SSH** (optional) | Sync → build → run on the iOS Simulator → **screenshots returned to the AI** → logs, deep links | any Mac you can SSH into |
 | **USB iPhone** (optional) | List devices, install IPAs, read syslog from Windows/Linux | `pymobiledevice3` + Apple USB driver |
 
+Read the story behind it: [No Mac? You can still ship your Flutter app to iOS](https://medium.com/@guruprasathjay/no-mac-you-can-still-ship-your-flutter-app-to-ios-i-built-an-mcp-server-for-it-86fb85fa971f).
+A full working example: [flutter-ios-bridge-demo](https://github.com/guru-prasath-j/flutter-ios-bridge-demo).
+
 ## Install
 
 ```bash
