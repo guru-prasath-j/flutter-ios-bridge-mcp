@@ -1,12 +1,11 @@
 # flutter-ios-bridge-mcp
 
 [![tests](https://github.com/guru-prasath-j/flutter-ios-bridge-mcp/actions/workflows/tests.yml/badge.svg)](https://github.com/guru-prasath-j/flutter-ios-bridge-mcp/actions/workflows/tests.yml)
+[![M8ven Score](https://m8ven.ai/badge/mcp/guru-prasath-j/flutter-ios-bridge-mcp)](https://m8ven.ai/mcp/guru-prasath-j/flutter-ios-bridge-mcp)
 
 **Ship Flutter apps to iOS from Windows or Linux — no Mac needed.**
 
-An [MCP](https://modelcontextprotocol.io) server that gives your AI assistant (Claude Desktop, Claude Code, Cursor,
-VS Code Copilot, Windsurf…) the tools to build, sign, test and upload iOS apps. It connects your machine to the
-Apple parts of the toolchain:
+An [MCP](https://modelcontextprotocol.io) server that gives your AI assistant (Claude Desktop, Claude Code, Cursor, VS Code Copilot, Windsurf…) the tools to build, sign, test and upload iOS apps. It connects your machine to the Apple parts of the toolchain:
 
 | Backend | What it gives you | Needs |
 |---|---|---|
@@ -16,8 +15,7 @@ Apple parts of the toolchain:
 | **Remote Mac over SSH** (optional) | Sync → build → run on the iOS Simulator → **screenshots returned to the AI** → logs, deep links | any Mac you can SSH into |
 | **USB iPhone** (optional) | List devices, install IPAs, read syslog from Windows/Linux | `pymobiledevice3` + Apple USB driver |
 
-Read the story behind it: [No Mac? You can still ship your Flutter app to iOS](https://medium.com/@guruprasathjay/no-mac-you-can-still-ship-your-flutter-app-to-ios-i-built-an-mcp-server-for-it-86fb85fa971f).
-A full working example: [flutter-ios-bridge-demo](https://github.com/guru-prasath-j/flutter-ios-bridge-demo).
+Read the story behind it: [No Mac? You can still ship your Flutter app to iOS](https://medium.com/@guruprasathjay/no-mac-you-can-still-ship-your-flutter-app-to-ios-i-built-an-mcp-server-for-it-86fb85fa971f). A full working example: [flutter-ios-bridge-demo](https://github.com/guru-prasath-j/flutter-ios-bridge-demo).
 
 ## Install
 
@@ -66,40 +64,34 @@ No pipx on PATH? Use `"command": "pipx", "args": ["run", "flutter-ios-bridge-mcp
 
 ## Configuration
 
-Environment variables win over `config.toml` (`%APPDATA%\flutter-ios-bridge\config.toml` on Windows,
-`~/.config/flutter-ios-bridge/config.toml` elsewhere; override with `FIB_CONFIG`).
+Environment variables win over `config.toml` (`%APPDATA%\flutter-ios-bridge\config.toml` on Windows, `~/.config/flutter-ios-bridge/config.toml` elsewhere; override with `FIB_CONFIG`).
 
 | Variable | Purpose |
 |---|---|
 | `FIB_PROJECT_PATH` | Default Flutter project |
 | `GITHUB_TOKEN` | Fine-grained PAT: *Actions* R/W, *Secrets* R/W, *Contents* R. Falls back to `gh auth token` |
 | `FIB_GITHUB_REPO` | `owner/repo` (default: read from the project's git remote) |
-| `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_PRIVATE_KEY_PATH` | App Store Connect API key (Users and Access → Integrations → App Store Connect API, role *App Manager* or *Admin*) |
+| `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_PRIVATE_KEY_PATH` | App Store Connect API key |
 | `FIB_MAC_HOST`, `FIB_MAC_USER`, `FIB_MAC_KEY_PATH` / `FIB_MAC_PASSWORD`, `FIB_MAC_PORT`, `FIB_MAC_REMOTE_DIR` | Optional remote Mac |
 
-Signing material created by the tool lives in `~/.flutter-ios-bridge/signing/` (private keys are `chmod 600`). Back it up —
-the certificate private key never leaves your machine except as an encrypted GitHub secret.
+Signing material created by the tool lives in `~/.flutter-ios-bridge/signing/` (private keys are `chmod 600`). Back it up — the certificate private key never leaves your machine except as an encrypted GitHub secret.
 
 ## The zero-Mac path to TestFlight
 
 Ask your assistant *"Ship my app to TestFlight"* (or use the built-in `ship_to_testflight` prompt). Under the hood:
 
-1. `ios_doctor` → fix bundle id (`com.example.*` is rejected), missing permission strings for your plugins,
-   deployment target / Podfile mismatch, icon alpha channel…
+1. `ios_doctor` → fix bundle id, missing permission strings, deployment target / Podfile mismatch, icon alpha channel.
 2. `ci_generate_workflow` → commit & push `.github/`.
-3. `ci_trigger_build(build_type="unsigned-ipa")` → `ci_wait_for_run` → on failure `ci_get_logs` pulls the exact
-   Xcode/CocoaPods errors so the assistant can fix them.
-4. Create the app record once in App Store Connect (Apple's API can't create apps).
-5. `signing_quick_setup(profile_kind="app-store")` — CSR → Apple Distribution certificate → `.p12` →
-   App Store profile → GitHub secrets. All from Windows/Linux.
+3. `ci_trigger_build(build_type="unsigned-ipa")` → `ci_wait_for_run` → on failure `ci_get_logs` pulls the exact Xcode/CocoaPods errors.
+4. Create the app record once in App Store Connect.
+5. `signing_quick_setup(profile_kind="app-store")` → GitHub secrets.
 6. `ci_trigger_build(build_type="signed-ipa", testflight=true)`.
-7. `testflight_builds` → `testflight_distribute` (export compliance + beta groups).
+7. `testflight_builds` → `testflight_distribute`.
 
 ### Testing on a real iPhone without a Mac
-* **Ad-hoc**: `asc_register_device` (reads the UDID over USB) → `signing_quick_setup(profile_kind="ad-hoc")` →
-  `ci_trigger_build(build_type="signed-ipa", export_method="ad-hoc")` → `ci_download_artifacts` →
-  `device_install_app` → `device_syslog` for crash logs.
-* **Free Apple ID**: build `unsigned-ipa` and sideload with Sideloadly / AltStore (7-day signature).
+
+* **Ad-hoc**: register the device → create signing material → build and install the IPA.
+* **Free Apple ID**: build `unsigned-ipa` and sideload with Sideloadly / AltStore.
 * **Simulator**: needs macOS; with a remote Mac use `mac_run_on_simulator` + `mac_screenshot`.
 
 ## Tools
@@ -115,18 +107,16 @@ Ask your assistant *"Ship my app to TestFlight"* (or use the built-in `ship_to_t
 | prompts | `ship_to_testflight`, `fix_ios_build` |
 
 ## Costs and limits
-* GitHub-hosted macOS minutes are free on public repos; private repos consume your Actions minutes at a 10× rate
-  (check GitHub's current pricing). A clean Flutter iOS build takes roughly 8–20 minutes.
+
+* GitHub-hosted macOS minutes are free on public repos; private repos consume your Actions minutes at a 10× rate. A clean Flutter iOS build takes roughly 8–20 minutes.
 * Publishing to TestFlight/App Store requires a paid Apple Developer Program membership.
-* Apple caps the number of distribution certificates; `signing_quick_setup` reuses the one it created, and
-  `asc_revoke_certificate` frees a slot.
-* Windows USB access needs Apple's driver (install *Apple Devices* from the Microsoft Store, or iTunes);
-  Linux needs `usbmuxd`.
+* Apple caps the number of distribution certificates; `signing_quick_setup` reuses the one it created, and `asc_revoke_certificate` frees a slot.
+* Windows USB access needs Apple's driver; Linux needs `usbmuxd`.
 
 ## Security
-* Tokens and keys are read from env/config only; nothing is sent anywhere except GitHub and Apple APIs
-  (and your own Mac over SSH).
-* GitHub secrets are encrypted locally with the repo's public key (libsodium sealed box) before upload.
+
+* Tokens and keys are read from env/config only; nothing is sent anywhere except GitHub and Apple APIs (and your own Mac over SSH).
+* GitHub secrets are encrypted locally with the repo's public key before upload.
 * The CI workflow creates a throwaway keychain per run and deletes it afterwards.
 
 ## Development
